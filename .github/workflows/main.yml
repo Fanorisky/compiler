@@ -42,10 +42,13 @@ jobs:
         run: |
           mkdir -p dist
 
-          echo "Semua object files:"
-          find build/CMakeFiles/ -name "*.o" | sort
+          # Hanya ambil pawncc.dir dan pawnc.dir — exclude disasm dan runtime
+          OBJ_FILES=$(find build/CMakeFiles/pawncc.dir/ build/CMakeFiles/pawnc.dir/ -name "*.o" | sort | tr '\n' ' ')
 
-          emcc $(find build/CMakeFiles/ -name "*.o" | sort | tr '\n' ' ') \
+          echo "Object files yang di-link:"
+          echo $OBJ_FILES | tr ' ' '\n'
+
+          emcc $OBJ_FILES \
             -o dist/pawncc.js \
             -s EXPORTED_FUNCTIONS='["_main"]' \
             -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
