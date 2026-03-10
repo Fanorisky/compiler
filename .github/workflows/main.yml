@@ -46,32 +46,21 @@ jobs:
 
       # 7. Link final ke .wasm + .js dengan flag yang diperlukan plugin Acode
       - name: Link to WASM with Emscripten flags
+        
+
+        # Kalau step di atas error karena build/pawncc bukan object files,
+        # gunakan alternatif ini (uncomment):
         run: |
-          emcc build/pawncc \
+          mkdir -p dist
+          emcc build/CMakeFiles/pawncc.dir/*.c.o \
             -o dist/pawncc.js \
             -s EXPORTED_FUNCTIONS='["_main"]' \
-            -s EXPORTED_RUNTIME_METHODS='["callMain","FS","allocate","intArrayFromString","ALLOC_NORMAL"]' \
+            -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
             -s ALLOW_MEMORY_GROWTH=1 \
             -s FORCE_FILESYSTEM=1 \
             -s MODULARIZE=1 \
             -s EXPORT_NAME="createPawnCompiler" \
-            -s ENVIRONMENT='web' \
-            -O2 \
-            --pre-js src/pre.js  # opsional: inject code sebelum module load
-
-        # Kalau step di atas error karena build/pawncc bukan object files,
-        # gunakan alternatif ini (uncomment):
-        # run: |
-        #   mkdir -p dist
-        #   emcc build/CMakeFiles/pawncc.dir/*.c.o \
-        #     -o dist/pawncc.js \
-        #     -s EXPORTED_FUNCTIONS='["_main"]' \
-        #     -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
-        #     -s ALLOW_MEMORY_GROWTH=1 \
-        #     -s FORCE_FILESYSTEM=1 \
-        #     -s MODULARIZE=1 \
-        #     -s EXPORT_NAME="createPawnCompiler" \
-        #     -O2
+            -O2
 
       # 8. Pastikan output ada
       - name: Check output files
