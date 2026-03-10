@@ -42,12 +42,10 @@ jobs:
         run: |
           mkdir -p dist
 
-          # Cari semua .o files dulu untuk debug
-          echo "Object files found:"
-          find build/CMakeFiles/pawncc.dir/ -name "*.o" | sort
+          echo "Semua object files:"
+          find build/CMakeFiles/ -name "*.o" | sort
 
-          # Link SEMUA .o files sekaligus
-          emcc $(find build/CMakeFiles/pawncc.dir/ -name "*.o" | sort | tr '\n' ' ') \
+          emcc $(find build/CMakeFiles/ -name "*.o" | sort | tr '\n' ' ') \
             -o dist/pawncc.js \
             -s EXPORTED_FUNCTIONS='["_main"]' \
             -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
