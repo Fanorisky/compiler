@@ -5,32 +5,27 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  workflow_dispatch: # bisa trigger manual dari tab Actions
+  workflow_dispatch:
 
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Emscripten via emsdk
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 3.1.50 # versi stabil, bisa diganti latest
+          version: 3.1.50
 
-      # 3. Verifikasi emcc tersedia
       - name: Verify Emscripten
         run: emcc --version
 
-      # 4. Buat folder build
       - name: Create build directory
         run: mkdir -p build
 
-      # 5. Configure dengan emcmake — matikan ASM, aktifkan filesystem
       - name: Configure with emcmake
         run: |
           cd build
@@ -38,21 +33,21 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DPAWNC_NO_ASM=ON
 
-      # 6. Build dengan emmake
       - name: Build with emmake
         run: |
           cd build
           emmake make -j$(nproc)
 
-      # 7. Link final ke .wasm + .js dengan flag yang diperlukan plugin Acode
       - name: Link to WASM with Emscripten flags
-        
-
-        # Kalau step di atas error karena build/pawncc bukan object files,
-        # gunakan alternatif ini (uncomment):
         run: |
           mkdir -p dist
-          emcc build/CMakeFiles/pawncc.dir/*.c.o \
+
+          # Cari semua .o files dulu untuk debug
+          echo "Object files found:"
+          find build/CMakeFiles/pawncc.dir/ -name "*.o" | sort
+
+          # Link SEMUA .o files sekaligus
+          emcc $(find build/CMakeFiles/pawncc.dir/ -name "*.o" | sort | tr '\n' ' ') \
             -o dist/pawncc.js \
             -s EXPORTED_FUNCTIONS='["_main"]' \
             -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' \
@@ -60,16 +55,15 @@ jobs:
             -s FORCE_FILESYSTEM=1 \
             -s MODULARIZE=1 \
             -s EXPORT_NAME="createPawnCompiler" \
+            -s ENVIRONMENT='web' \
             -O2
 
-      # 8. Pastikan output ada
       - name: Check output files
         run: |
           ls -lh dist/
           echo "✅ pawncc.wasm size: $(du -sh dist/pawncc.wasm | cut -f1)"
           echo "✅ pawncc.js  size:  $(du -sh dist/pawncc.js  | cut -f1)"
 
-      # 9. Upload hasil build sebagai artifact GitHub
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
@@ -79,7 +73,6 @@ jobs:
             dist/pawncc.js
           retention-days: 30
 
-      # 10. (Opsional) Buat GitHub Release otomatis kalau push ke master
       - name: Create Release
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
@@ -91,7 +84,7 @@ jobs:
             dist/pawncc.js
           body: |
             Automated WASM build dari commit ${{ github.sha }}
-            
+
             ## Cara pakai di plugin Acode:
             ```js
             const compiler = await createPawnCompiler();
